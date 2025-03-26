@@ -20,11 +20,15 @@ add_library(AudioFileTools STATIC
 
 target_include_directories(AudioFileTools PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
 set_target_properties(AudioFileTools PROPERTIES
         CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}"
 )
+
+target_compile_features(AudioFileTools PUBLIC cxx_std_20)
 
 # Wav Read/Write Test
 set(WAV_TEST_SOURCES
