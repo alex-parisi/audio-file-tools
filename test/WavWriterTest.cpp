@@ -1,8 +1,8 @@
 /// WavWriterTest.cpp
 
 #include <gtest/gtest.h>
-#include "WavReader.h"
-#include "WavWriter.h"
+#include <AudioFileTools/WavReader.h>
+#include <AudioFileTools/WavWriter.h>
 
 #include <fstream>
 #include <vector>

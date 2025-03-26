@@ -18,10 +18,12 @@ add_library(AudioFileTools STATIC
         src/WavWriter.cpp
 )
 
-target_include_directories(AudioFileTools PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/inc
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+target_include_directories(AudioFileTools
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
         $<INSTALL_INTERFACE:include>
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 
 set_target_properties(AudioFileTools PROPERTIES

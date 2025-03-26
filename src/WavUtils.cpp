@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "WavUtils.h"
+#include <AudioFileTools/WavUtils.h>
 
 /**
  * @brief Helper function to convert a uint8_t sample to a float sample.

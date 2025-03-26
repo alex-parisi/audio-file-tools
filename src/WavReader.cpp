@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "WavReader.h"
+#include <AudioFileTools/WavReader.h>
 
 /**
  * @brief Public constructor that verifies the configuration and creates a
