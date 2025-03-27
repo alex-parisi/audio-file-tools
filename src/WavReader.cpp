@@ -95,76 +95,87 @@ auto WavReader::open_file() -> bool {
  * valid.
  */
 auto WavReader::read_header() -> bool {
-    // Read the RIFF chunk
+    // Read RIFF header
     std::array<char, 4> chunkId{};
     m_fileStream.read(chunkId.data(), chunkId.size());
-    if (std::strncmp(chunkId.data(), "RIFF", chunkId.size()) != 0) {
-        return false;
-    }
+    if (std::strncmp(chunkId.data(), "RIFF", 4) != 0) return false;
+
     uint32_t chunkSize;
-    m_fileStream.read(reinterpret_cast<char *>(&chunkSize), 4);
+    m_fileStream.read(reinterpret_cast<char *>(&chunkSize), sizeof(chunkSize));
+
     std::array<char, 4> format{};
     m_fileStream.read(format.data(), format.size());
-    if (std::strncmp(format.data(), "WAVE", format.size()) != 0) {
-        return false;
-    }
-    // Read the fmt subchunk
-    std::array<char, 4> subchunk1Id{};
-    m_fileStream.read(subchunk1Id.data(), subchunk1Id.size());
-    if (std::strncmp(subchunk1Id.data(), "fmt ", subchunk1Id.size()) != 0) {
-        return false;
-    }
-    uint32_t subchunk1Size;
-    m_fileStream.read(reinterpret_cast<char *>(&subchunk1Size), 4);
-    uint16_t audioFormat;
-    m_fileStream.read(reinterpret_cast<char *>(&audioFormat), 2);
-    uint16_t numChannels;
-    m_fileStream.read(reinterpret_cast<char *>(&numChannels), 2);
-    uint32_t sampleRate;
-    m_fileStream.read(reinterpret_cast<char *>(&sampleRate), 4);
-    uint32_t byteRate;
-    m_fileStream.read(reinterpret_cast<char *>(&byteRate), 4);
-    uint16_t blockAlign;
-    m_fileStream.read(reinterpret_cast<char *>(&blockAlign), 2);
-    uint16_t bitDepth;
-    m_fileStream.read(reinterpret_cast<char *>(&bitDepth), 2);
-    // Read the data subchunk
-    std::array<char, 4> subchunk2Id{};
-    m_fileStream.read(subchunk2Id.data(), subchunk2Id.size());
-    if (std::strncmp(subchunk2Id.data(), "data", subchunk2Id.size()) != 0) {
-        return false;
-    }
-    uint32_t subchunk2Size;
-    m_fileStream.read(reinterpret_cast<char *>(&subchunk2Size), 4);
-    if (audioFormat == 1 || audioFormat == 3) {
-        m_config.format = static_cast<WavFormat>(audioFormat);
-    } else {
-        return false;
-    }
-    if (sampleRate == 8000 || sampleRate == 11025 || sampleRate == 16000 ||
-        sampleRate == 22050 || sampleRate == 32000 || sampleRate == 44100 ||
-        sampleRate == 48000 || sampleRate == 96000 || sampleRate == 176400 ||
-        sampleRate == 192000 || sampleRate == 352800 || sampleRate == 384000) {
-        m_config.sampleRate = static_cast<WavSampleRate>(sampleRate);
-    } else {
-        return false;
-    }
-    if (numChannels > 0) {
-        m_config.numChannels = numChannels;
-    } else {
-        return false;
-    }
-    if (bitDepth == 8 || bitDepth == 16 || bitDepth == 24 || bitDepth == 32) {
-        m_config.bitDepth = static_cast<WavBitDepth>(bitDepth);
-    } else {
-        return false;
-    }
-    /// Verify the configuration
-    if (m_config.format == WavFormat::FLOAT) {
-        if (m_config.bitDepth != WavBitDepth::BIT_DEPTH_32) {
-            return false;
+    if (std::strncmp(format.data(), "WAVE", 4) != 0) return false;
+
+    bool foundFmt = false;
+    bool foundData = false;
+
+    while (m_fileStream && (!foundFmt || !foundData)) {
+        std::array<char, 4> subchunkId{};
+        m_fileStream.read(subchunkId.data(), 4);
+        if (m_fileStream.gcount() != 4) break;
+
+        uint32_t subchunkSize = 0;
+        m_fileStream.read(reinterpret_cast<char *>(&subchunkSize), sizeof(subchunkSize));
+
+        if (std::strncmp(subchunkId.data(), "fmt ", 4) == 0) {
+            foundFmt = true;
+
+            uint16_t audioFormat, numChannels;
+            uint32_t sampleRate, byteRate;
+            uint16_t blockAlign, bitDepth;
+
+            m_fileStream.read(reinterpret_cast<char *>(&audioFormat), sizeof(audioFormat));
+            m_fileStream.read(reinterpret_cast<char *>(&numChannels), sizeof(numChannels));
+            m_fileStream.read(reinterpret_cast<char *>(&sampleRate), sizeof(sampleRate));
+            m_fileStream.read(reinterpret_cast<char *>(&byteRate), sizeof(byteRate));
+            m_fileStream.read(reinterpret_cast<char *>(&blockAlign), sizeof(blockAlign));
+            m_fileStream.read(reinterpret_cast<char *>(&bitDepth), sizeof(bitDepth));
+
+            // Skip any extra fmt bytes
+            std::streamoff fmtExtraBytes = static_cast<std::streamoff>(subchunkSize) - 16;
+            if (fmtExtraBytes > 0) {
+                m_fileStream.seekg(fmtExtraBytes, std::ios::cur);
+            }
+
+            // Assign to config
+            if (audioFormat == 1 || audioFormat == 3) {
+                m_config.format = static_cast<WavFormat>(audioFormat);
+            } else return false;
+
+            if (numChannels > 0) {
+                m_config.numChannels = numChannels;
+            } else return false;
+
+            if (bitDepth == 8 || bitDepth == 16 || bitDepth == 24 || bitDepth == 32) {
+                m_config.bitDepth = static_cast<WavBitDepth>(bitDepth);
+            } else return false;
+
+            if (sampleRate == 8000 || sampleRate == 11025 || sampleRate == 16000 ||
+                sampleRate == 22050 || sampleRate == 32000 || sampleRate == 44100 ||
+                sampleRate == 48000 || sampleRate == 96000 || sampleRate == 176400 ||
+                sampleRate == 192000 || sampleRate == 352800 || sampleRate == 384000) {
+                m_config.sampleRate = static_cast<WavSampleRate>(sampleRate);
+            } else return false;
+
+            // Validate config
+            if (m_config.format == WavFormat::FLOAT && m_config.bitDepth != WavBitDepth::BIT_DEPTH_32) {
+                return false;
+            }
+
+        } else if (std::strncmp(subchunkId.data(), "data", 4) == 0) {
+            foundData = true;
+
+            uint32_t dataSize = subchunkSize;
+            // You might want to store dataSize for reading samples later
+
+        } else {
+            // Skip unknown or unneeded chunk (and pad if odd size)
+            m_fileStream.seekg((subchunkSize + 1) & ~1, std::ios::cur);
         }
+
+        if (m_fileStream.fail()) return false;
     }
 
-    return true;
+    return foundFmt && foundData;
 }
