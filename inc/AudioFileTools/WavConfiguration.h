@@ -76,6 +76,14 @@ struct WavFileConfiguration {
     uint8_t numChannels = 1;
     WavBitDepth bitDepth = WavBitDepth::BIT_DEPTH_32;
     WavFormat format = WavFormat::FLOAT;
+    uint16_t blockAlign = 0;
+    uint32_t dataChunkSize = 0;
+
+    /** Get the number of samples in the WAV file */
+    [[nodiscard]] uint32_t num_samples() const {
+        if (blockAlign == 0) return 0;
+        return dataChunkSize / blockAlign;
+    }
 
     /** Print the configuration */
     auto print() const -> void {
@@ -85,6 +93,7 @@ struct WavFileConfiguration {
                   << std::endl;
         std::cout << "\tBit Depth: " << static_cast<int>(bitDepth) << std::endl;
         std::cout << "\tFormat: " << static_cast<int>(format) << std::endl;
+        std::cout << "\tSample count: " << num_samples() << std::endl;
     }
 };
 

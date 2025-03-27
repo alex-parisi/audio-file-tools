@@ -158,6 +158,8 @@ auto WavReader::read_header() -> bool {
                 m_config.sampleRate = static_cast<WavSampleRate>(sampleRate);
             } else return false;
 
+            m_config.blockAlign = blockAlign;
+
             // Validate config
             if (m_config.format == WavFormat::FLOAT && m_config.bitDepth != WavBitDepth::BIT_DEPTH_32) {
                 return false;
@@ -165,10 +167,7 @@ auto WavReader::read_header() -> bool {
 
         } else if (std::strncmp(subchunkId.data(), "data", 4) == 0) {
             foundData = true;
-
-            uint32_t dataSize = subchunkSize;
-            // You might want to store dataSize for reading samples later
-
+            m_config.dataChunkSize = subchunkSize;
         } else {
             // Skip unknown or unneeded chunk (and pad if odd size)
             m_fileStream.seekg((subchunkSize + 1) & ~1, std::ios::cur);
@@ -178,4 +177,9 @@ auto WavReader::read_header() -> bool {
     }
 
     return foundFmt && foundData;
+}
+
+auto WavReader::num_samples() const -> uint32_t {
+    if (m_config.blockAlign == 0) return 0;
+    return m_config.dataChunkSize / m_config.blockAlign;
 }

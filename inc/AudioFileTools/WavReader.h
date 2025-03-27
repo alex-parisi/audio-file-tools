@@ -260,6 +260,12 @@ private:
      */
     auto read_header() -> bool;
 
+    /**
+     * @brief Gets the number of samples in the WAV file.
+     * @return The number of samples
+     */
+    auto num_samples() const -> uint32_t;
+
     /** The configuration for the WAV reader */
     WavFileConfiguration m_config = {};
 
