@@ -79,11 +79,12 @@ struct WavFileConfiguration {
 
     /** Print the configuration */
     auto print() const -> void {
-        std::cout << "Channels: " << static_cast<int>(numChannels) << std::endl;
-        std::cout << "Sample Rate: " << static_cast<int>(sampleRate)
+        std::cout << "Configuration for: " << filename << std::endl;
+        std::cout << "\tChannels: " << static_cast<int>(numChannels) << std::endl;
+        std::cout << "\tSample Rate: " << static_cast<int>(sampleRate)
                   << std::endl;
-        std::cout << "Bit Depth: " << static_cast<int>(bitDepth) << std::endl;
-        std::cout << "Format: " << static_cast<int>(format) << std::endl;
+        std::cout << "\tBit Depth: " << static_cast<int>(bitDepth) << std::endl;
+        std::cout << "\tFormat: " << static_cast<int>(format) << std::endl;
     }
 };
 
